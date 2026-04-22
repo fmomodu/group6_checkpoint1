@@ -1,20 +1,10 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff } from 'lucide-react'
+import { AuthView } from '@neondatabase/auth/react'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-
-  function handleSubmit(e) {
-    e.preventDefault()
-  }
-
   return (
     <div className="min-h-screen bg-[#fdf6f9] flex flex-col items-center justify-center px-6">
-      {/* Logo */}
       <div className="mb-8 text-center">
         <div className="w-16 h-16 bg-[#FBEAF0] rounded-2xl flex items-center justify-center mx-auto mb-3">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
@@ -26,62 +16,11 @@ export default function LoginPage() {
           </svg>
         </div>
         <h1 className="font-display text-2xl font-semibold text-[#2C1A23]">Beauty Book</h1>
-        <p className="text-[#7a5a67] text-sm mt-1">Sign in is temporarily disabled</p>
+        <p className="text-[#7a5a67] text-sm mt-1">Sign in with your Neon Auth account</p>
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-3xl border border-[#F4C0D1] p-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Email</label>
-            <input
-              type="email"
-              disabled
-              value=""
-              onChange={() => {}}
-              placeholder="you@example.com"
-              className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm outline-none focus:border-[#D4537E] transition-colors"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Password</label>
-            <div className="relative mt-1.5">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                disabled
-                value=""
-                onChange={() => {}}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm outline-none focus:border-[#D4537E] transition-colors pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#bba0ab]"
-              >
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
-            </div>
-          </div>
-
-          <div className="text-xs text-[#7a5a67] bg-[#fdf6f9] px-3 py-2 rounded-lg border border-[#F4C0D1]">
-            Auth is temporarily disabled. Continue as guest to explore features.
-          </div>
-
-          <button
-            type="submit"
-            disabled
-            className="w-full bg-[#D4537E] text-white py-3.5 rounded-xl font-medium opacity-60 cursor-not-allowed"
-          >
-            Sign In (Disabled)
-          </button>
-        </form>
-
-        <button
-          onClick={() => router.push('/')}
-          className="w-full mt-3 bg-white text-[#D4537E] py-3 rounded-xl font-medium border border-[#D4537E]"
-        >
-          Continue as Guest
-        </button>
+        <AuthView path="sign-in" />
 
         <div className="mt-5 text-center text-sm text-[#7a5a67]">
           Don't have an account?{' '}
@@ -90,8 +29,10 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-[#F4C0D1]">
-          <p className="text-xs text-center text-[#bba0ab]">Demo: demo@beautybook.com / password123</p>
+        <div className="mt-4 pt-4 border-t border-[#F4C0D1] text-center">
+          <Link href="/" className="text-sm text-[#D4537E] font-medium hover:underline">
+            Continue as Guest
+          </Link>
         </div>
       </div>
     </div>

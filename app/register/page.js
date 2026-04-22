@@ -2,14 +2,139 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff } from 'lucide-react'
+import { authClient } from '@/lib/auth-client'
+
+const ACCOUNT_TYPES = [
+  { value: 'CUSTOMER', label: 'Customer', description: 'Find, save, and review beauty professionals.' },
+  { value: 'PROFESSIONAL', label: 'Professional', description: 'Create a beauty business profile and receive customers.' },
+]
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
+  const [role, setRole] = useState('CUSTOMER')
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    city: '',
+    state: '',
+    businessName: '',
+    bio: '',
+    services: '',
+    priceMin: '',
+    priceMax: '',
+    instagram: '',
+    website: '',
+  })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
+  function updateField(key, value) {
+    setForm(prev => ({ ...prev, [key]: value }))
+  }
+
+  async function waitForSession(maxAttempts = 10) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const sessionResult = await authClient.getSession({
+        query: { disableCookieCache: true, disableRefresh: true },
+      })
+
+      if (sessionResult.data?.user?.id) return true
+
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+
+    return false
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault()
+    setError('')
+
+    if (!form.name || !form.email || !form.password || !form.phone || !form.city || !form.state) {
+      setError('Please complete all required fields.')
+      return
+    }
+
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+
+    if (role === 'PROFESSIONAL' && (!form.businessName || !form.bio || !form.services || !form.priceMin || !form.priceMax)) {
+      setError('Please complete the professional profile fields.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const signUpResult = await authClient.signUp.email({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      })
+
+      if (signUpResult.error) {
+        setError(signUpResult.error.message || 'Unable to create your account.')
+        setLoading(false)
+        return
+      }
+
+      const signInResult = await authClient.signIn.email({
+        email: form.email,
+        password: form.password,
+      })
+
+      if (signInResult.error) {
+        setError(signInResult.error.message || 'Your account was created, but sign-in did not complete.')
+        setLoading(false)
+        return
+      }
+
+      const hasSession = await waitForSession()
+      if (!hasSession) {
+        setError('Your account was created, but the session was not ready yet. Please try signing in once.')
+        setLoading(false)
+        return
+      }
+
+      const profileRes = await fetch('/api/account/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role,
+          phone: form.phone,
+          city: form.city,
+          state: form.state,
+          businessName: form.businessName,
+          bio: form.bio,
+          services: form.services,
+          priceMin: form.priceMin,
+          priceMax: form.priceMax,
+          instagram: form.instagram,
+          website: form.website,
+        }),
+      })
+
+      const profileData = await profileRes.json()
+
+      if (!profileRes.ok) {
+        setError(profileData.error || 'Your account was created, but profile setup failed.')
+        setLoading(false)
+        return
+      }
+
+      router.push(role === 'PROFESSIONAL' ? '/profile' : '/search')
+      router.refresh()
+    } catch {
+      setError('Something went wrong while creating your account.')
+      setLoading(false)
+      return
+    }
+
+    setLoading(false)
   }
 
   return (
@@ -25,78 +150,187 @@ export default function RegisterPage() {
           </svg>
         </div>
         <h1 className="font-display text-2xl font-semibold text-[#2C1A23]">Create Account</h1>
-        <p className="text-[#7a5a67] text-sm mt-1">Registration is temporarily disabled</p>
+        <p className="text-[#7a5a67] text-sm mt-1">Create an account with Neon Auth</p>
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-3xl border border-[#F4C0D1] p-6">
+      <div className="w-full max-w-xl bg-white rounded-3xl border border-[#F4C0D1] p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Full Name</label>
-            <input
-              type="text"
-              disabled
-              value=""
-              onChange={() => {}}
-              placeholder="Your name"
-              className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm outline-none focus:border-[#D4537E] transition-colors"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Email</label>
-            <input
-              type="email"
-              disabled
-              value=""
-              onChange={() => {}}
-              placeholder="you@example.com"
-              className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm outline-none focus:border-[#D4537E] transition-colors"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Password</label>
-            <div className="relative mt-1.5">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                disabled
-                value=""
-                onChange={() => {}}
-                placeholder="Min. 8 characters"
-                className="w-full px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm outline-none focus:border-[#D4537E] transition-colors pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#bba0ab]"
-              >
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
+            <p className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider mb-2">Account Type</p>
+            <div className="grid sm:grid-cols-2 gap-2">
+              {ACCOUNT_TYPES.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setRole(option.value)}
+                  className={`rounded-2xl border p-4 text-left transition-colors ${
+                    role === option.value
+                      ? 'border-[#D4537E] bg-[#fdf6f9] text-[#2C1A23]'
+                      : 'border-[#F4C0D1] bg-white text-[#2C1A23]'
+                  }`}
+                >
+                  <div className="font-semibold text-[#2C1A23]">{option.label}</div>
+                  <div className="text-xs text-[#7a5a67] mt-1">{option.description}</div>
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="text-xs text-[#7a5a67] bg-[#fdf6f9] px-3 py-2 rounded-lg border border-[#F4C0D1]">
-            Auth is temporarily disabled. Continue as guest to explore features.
+          <div className="grid sm:grid-cols-2 gap-4">
+            <label className="block">
+              <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Full Name</span>
+              <input
+                value={form.name}
+                onChange={e => updateField('name', e.target.value)}
+                className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Email</span>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => updateField('email', e.target.value)}
+                className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Password</span>
+              <input
+                type="password"
+                value={form.password}
+                onChange={e => updateField('password', e.target.value)}
+                className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Phone</span>
+              <input
+                value={form.phone}
+                onChange={e => updateField('phone', e.target.value)}
+                className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">City</span>
+              <input
+                value={form.city}
+                onChange={e => updateField('city', e.target.value)}
+                className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">State</span>
+              <input
+                value={form.state}
+                onChange={e => updateField('state', e.target.value)}
+                placeholder="IN"
+                className="w-full mt-1.5 px-4 py-3 bg-[#fdf6f9] border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+              />
+            </label>
           </div>
+
+          {role === 'PROFESSIONAL' && (
+            <div className="space-y-4 rounded-2xl border border-[#F4C0D1] bg-[#fff9fb] p-4">
+              <div>
+                <h2 className="font-semibold text-[#2C1A23]">Professional Profile</h2>
+                <p className="text-xs text-[#7a5a67] mt-1">This information will be saved to your business listing in the database.</p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <label className="block sm:col-span-2">
+                  <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Business Name</span>
+                  <input
+                    value={form.businessName}
+                    onChange={e => updateField('businessName', e.target.value)}
+                    className="w-full mt-1.5 px-4 py-3 bg-white border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Bio</span>
+                  <textarea
+                    rows={4}
+                    value={form.bio}
+                    onChange={e => updateField('bio', e.target.value)}
+                    className="w-full mt-1.5 px-4 py-3 bg-white border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors resize-none"
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Services</span>
+                  <input
+                    value={form.services}
+                    onChange={e => updateField('services', e.target.value)}
+                    placeholder="Nails, Hair, Brows"
+                    className="w-full mt-1.5 px-4 py-3 bg-white border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Min Price</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.priceMin}
+                    onChange={e => updateField('priceMin', e.target.value)}
+                    className="w-full mt-1.5 px-4 py-3 bg-white border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Max Price</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.priceMax}
+                    onChange={e => updateField('priceMax', e.target.value)}
+                    className="w-full mt-1.5 px-4 py-3 bg-white border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Instagram</span>
+                  <input
+                    value={form.instagram}
+                    onChange={e => updateField('instagram', e.target.value)}
+                    placeholder="beautybyyou"
+                    className="w-full mt-1.5 px-4 py-3 bg-white border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-[#7a5a67] uppercase tracking-wider">Website</span>
+                  <input
+                    value={form.website}
+                    onChange={e => updateField('website', e.target.value)}
+                    placeholder="https://"
+                    className="w-full mt-1.5 px-4 py-3 bg-white border border-[#F4C0D1] rounded-xl text-sm text-[#2C1A23] placeholder:text-[#9b7c89] outline-none focus:border-[#D4537E] transition-colors"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="text-sm text-[#b60000] bg-[#fff1f1] border border-[#ffd2d2] rounded-xl px-4 py-3">
+              {error}
+            </div>
+          )}
 
           <button
             type="submit"
-            disabled
-            className="w-full bg-[#D4537E] text-white py-3.5 rounded-xl font-medium opacity-60 cursor-not-allowed"
+            disabled={loading}
+            className="w-full bg-[#D4537E] text-white py-3.5 rounded-xl font-medium hover:bg-[#993556] disabled:opacity-60 transition-colors"
           >
-            Create Account (Disabled)
+            {loading ? 'Creating account...' : `Create ${role === 'PROFESSIONAL' ? 'Professional' : 'Customer'} Account`}
           </button>
         </form>
-
-        <button
-          onClick={() => router.push('/')}
-          className="w-full mt-3 bg-white text-[#D4537E] py-3 rounded-xl font-medium border border-[#D4537E]"
-        >
-          Continue as Guest
-        </button>
 
         <div className="mt-5 text-center text-sm text-[#7a5a67]">
           Already have an account?{' '}
           <Link href="/login" className="text-[#D4537E] font-medium hover:underline">
             Sign In
+          </Link>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-[#F4C0D1] text-center">
+          <Link href="/" className="text-sm text-[#D4537E] font-medium hover:underline">
+            Continue as Guest
           </Link>
         </div>
       </div>

@@ -7,17 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum UserRole {
+  CUSTOMER
+  PROFESSIONAL
+}
 
-  reviews   Review[]
-  favorites Favorite[]
+model User {
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  name                String
+  password            String
+  image               String?
+  role                UserRole      @default(CUSTOMER)
+  phone               String?
+  city                String?
+  state               String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  reviews             Review[]
+  favorites           Favorite[]
+  professionalProfile Professional? @relation("ProfessionalOwner")
 }
 
 model Professional {
@@ -36,12 +46,14 @@ model Professional {
   instagram   String?
   website     String?
   gallery     String[]
+  ownerId     String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   reviews     Review[]
   favorites   Favorite[]
   hours       Hours[]
+  owner       User?    @relation("ProfessionalOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   avgRating   Float?
   reviewCount Int    @default(0)

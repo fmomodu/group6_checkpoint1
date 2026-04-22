@@ -1,6 +1,11 @@
 'use client'
-import { SessionProvider } from 'next-auth/react'
+import { NeonAuthUIProvider } from '@neondatabase/auth/react'
+import { authClient } from '@/lib/auth-client'
 
 export function Providers({ children }) {
-  return <SessionProvider>{children}</SessionProvider>
+  return (
+    <NeonAuthUIProvider authClient={authClient} redirectTo="/profile">
+      {children}
+    </NeonAuthUIProvider>
+  )
 }

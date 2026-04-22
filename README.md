@@ -61,8 +61,7 @@
 |--------|-------|-------------|
 | GET | `/api/professionals` | Search professionals |
 | GET | `/api/professionals/[id]` | Get one professional |
-| POST | `/api/auth/register` | Register user |
-| POST | `/api/auth/[...nextauth]` | NextAuth login/session |
+| ALL | `/api/auth/[...path]` | Neon Auth handler |
 | GET | `/api/favorites` | Get user's saved pros |
 | POST | `/api/favorites` | Toggle favorite |
 | POST | `/api/reviews` | Create/update review |
@@ -87,8 +86,8 @@ cp .env.example .env.local
 Fill in `.env.local`:
 ```
 DATABASE_URL="postgresql://..."
-NEXTAUTH_SECRET="run: openssl rand -base64 32"
-NEXTAUTH_URL="http://localhost:3000"
+NEON_AUTH_BASE_URL="https://your-branch.neonauth.us-east-1.aws.neon.tech"
+NEON_AUTH_COOKIE_SECRET="run: openssl rand -base64 32"
 ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
@@ -98,14 +97,15 @@ npx prisma db push
 node prisma/seed.js
 ```
 
+Enable Neon Auth in the Neon Console first under:
+`Project -> Branch -> Auth -> Configuration`
+
 ### 4. Run the dev server
 ```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
-
-**Demo login:** `demo@beautybook.com` / `password123`
 
 ---
 
@@ -115,8 +115,8 @@ Open [http://localhost:3000](http://localhost:3000)
 2. Go to [vercel.com](https://vercel.com) → Import repo
 3. Add environment variables in Vercel dashboard:
    - `DATABASE_URL` — use [Neon](https://neon.tech) or [Vercel Postgres](https://vercel.com/storage/postgres) for free PostgreSQL
-   - `NEXTAUTH_SECRET` — generate with `openssl rand -base64 32`
-   - `NEXTAUTH_URL` — your Vercel deployment URL (e.g. `https://beauty-book.vercel.app`)
+   - `NEON_AUTH_BASE_URL` — copy from Neon Console under your branch Auth configuration
+   - `NEON_AUTH_COOKIE_SECRET` — generate with `openssl rand -base64 32`
    - `ANTHROPIC_API_KEY` — from [console.anthropic.com](https://console.anthropic.com)
 4. Click Deploy!
 5. After deploy, run seed: `npx vercel env pull && node prisma/seed.js`

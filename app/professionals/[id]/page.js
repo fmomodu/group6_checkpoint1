@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/lib/auth-client'
 import { Star, MapPin, Phone, Instagram, Globe, Heart, ArrowLeft, Clock } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import ReviewForm from '@/components/ReviewForm'

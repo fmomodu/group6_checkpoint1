@@ -61,7 +61,7 @@ export default function HomePage() {
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Nail techs, lashes, hair color"
-                    className="flex-1 bg-transparent outline-none text-sm"
+                    className="flex-1 bg-transparent outline-none text-sm text-[#1f1f1f] placeholder:text-[#9ca3af]"
                   />
                 </div>
               </label>
@@ -73,7 +73,7 @@ export default function HomePage() {
                     value={city}
                     onChange={e => setCity(e.target.value)}
                     placeholder="City"
-                    className="flex-1 bg-transparent outline-none text-sm"
+                    className="flex-1 bg-transparent outline-none text-sm text-[#1f1f1f] placeholder:text-[#9ca3af]"
                   />
                 </div>
               </label>

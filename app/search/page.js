@@ -93,7 +93,7 @@ function SearchContent() {
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     placeholder="Nails, lashes..."
-                    className="w-full bg-transparent outline-none text-sm"
+                    className="w-full bg-transparent outline-none text-sm text-[#1f1f1f] placeholder:text-[#9ca3af]"
                   />
                 </div>
               </label>
@@ -106,7 +106,7 @@ function SearchContent() {
                     value={city}
                     onChange={e => setCity(e.target.value)}
                     placeholder="City"
-                    className="w-full bg-transparent outline-none text-sm"
+                    className="w-full bg-transparent outline-none text-sm text-[#1f1f1f] placeholder:text-[#9ca3af]"
                   />
                 </div>
               </label>
